@@ -87,6 +87,44 @@ if ( ! class_exists( 'acf_textref_field' ) ) {
 			<?php
 		}
 
+		// Helper: Convert single value from array => text
+		static function load_single_value( $value, $field ) {
+			if ( empty( $value ) ) {
+				return $value;
+			}
+			if ( ! empty( $post_id = $value['post_id'] ) ) {
+				return get_the_title( $post_id ) . " [$post_id]";
+			} elseif ( isset( $value['text'] ) ) {
+				return $value['text'];
+			}
+
+			return $value;
+		}
+
+		// Helper: Convert single value from text => array
+		static function update_single_value( $value, $field ) {
+			if ( empty( $value ) ) {
+				return $value;
+			}
+
+			$post_id = null;
+			if ( preg_match( '/(.*) \[(\d+)\]$/', $value, $matches ) ) {
+				if ( get_post_type( $matches[2] ) === $field['post_type'] ) {
+					$post_id = (int) end( $matches );
+					$value   = get_the_title( $post_id );
+				} else {
+					$value = $matches[1];
+				}
+			} elseif ( ! empty( $post = get_page_by_title( $value, OBJECT, $field['post_type'] ) ) && $post->post_title === $value ) {
+				$post_id = $post->ID;
+			}
+
+			return array(
+				'text'    => $value,
+				'post_id' => $post_id,
+			);
+		}
+
 		/**
 		 *  Load textref value
 		 *
@@ -101,25 +139,12 @@ if ( ! class_exists( 'acf_textref_field' ) ) {
 				return $value;
 			}
 			if ( ! empty( $field['multiple'] ) ) {
-				return implode( $field['separator'], array_map( function ( $single_value ) {
-					return $single_value['text'];
+				return implode( $field['separator'], array_map( function ( $single_value ) use ( $field ) {
+					return acf_textref_field::load_single_value( $single_value, $field );
 				}, $value ) );
 			} else {
-				return $value['text'];
+				return acf_textref_field::load_single_value( $value, $field );
 			}
-		}
-
-		static function update_single_value( $value, $field ) {
-			$post_id = null;
-			if ( ! empty( $post = get_page_by_title( $value, OBJECT, $field['post_type'] ) ) && $post->post_title === $value ) {
-				$post_id = $post->ID;
-
-			}
-
-			return array(
-				'text'    => $value,
-				'post_id' => $post_id,
-			);
 		}
 
 		/**
