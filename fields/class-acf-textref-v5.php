@@ -15,7 +15,10 @@ if ( ! class_exists( 'acf_textref_field' ) ) {
 			$this->label    = __( "Text Reference", 'acf-textref' );
 			$this->category = 'relational';
 			$this->defaults = array(
-				'post_type' => 'post',
+				'post_type'     => 'post',
+				'multiple'      => 0,
+				'separator'     => ';',
+				'return_format' => 'array',
 			);
 			$this->settings = $settings;
 			parent::__construct();
@@ -35,6 +38,38 @@ if ( ! class_exists( 'acf_textref_field' ) ) {
 				'choices' => acf_get_pretty_post_types(),
 				'ui'      => 1,
 			) );
+			// Multiple Values
+			acf_render_field_setting( $field, array(
+				'label' => __( "Allow multiple values", 'acf-textref' ),
+				'type'  => 'true_false',
+				'name'  => 'multiple',
+				'ui'    => 1,
+			) );
+			// Separator
+			acf_render_field_setting( $field, array(
+				'label'             => __( "Separator", 'acf-textref' ),
+				'type'              => 'text',
+				'name'              => 'separator',
+				'conditional_logic' => array(
+					array(
+						array(
+							'field'    => 'multiple',
+							'operator' => '==',
+							'value'    => '1',
+						),
+					),
+				),
+			) );
+			// Return_format
+			acf_render_field_setting( $field, array(
+				'label'        => __( "Return format", 'acf-textref' ),
+				'instructions' => __( "Specify the return format used in the templates.", 'acf-textref' ),
+				'type'         => 'select',
+				'name'         => 'return_format',
+				'choices'      => array(
+					'array' => __( "Values (array)", 'acf-textref' ),
+				),
+			) );
 		}
 
 		/**
@@ -46,10 +81,66 @@ if ( ! class_exists( 'acf_textref_field' ) ) {
 			$name  = $field['name'];
 			$value = $field['value'];
 			?>
-            <div class="acf-input-wrap acf-textref">
-                <input type="text" name="<?= $name ?>" value="<?= $value ?>"/>
-            </div>
+			<div class="acf-input-wrap acf-textref">
+				<input type="text" name="<?= $name ?>" value="<?= $value ?>"/>
+			</div>
 			<?php
+		}
+
+		/**
+		 *  Load textref value
+		 *
+		 * @param    $value (mixed) the value found in the database
+		 * @param    $post_id (mixed) the $post_id from which the value was loaded
+		 * @param    $field (array) the field array holding all the field options
+		 *
+		 * @return    $value
+		 */
+		function load_value( $value, $post_id, $field ) {
+			if ( ! is_array( $value ) ) {
+				return $value;
+			}
+			if ( ! empty( $field['multiple'] ) ) {
+				return implode( $field['separator'], array_map( function ( $single_value ) {
+					return $single_value['text'];
+				}, $value ) );
+			} else {
+				return $value['text'];
+			}
+		}
+
+		static function update_single_value( $value, $field ) {
+			$post_id = null;
+			if ( ! empty( $post = get_page_by_title( $value, OBJECT, $field['post_type'] ) ) && $post->post_title === $value ) {
+				$post_id = $post->ID;
+
+			}
+
+			return array(
+				'text'    => $value,
+				'post_id' => $post_id,
+			);
+		}
+
+		/**
+		 *  update_value()
+		 *
+		 * @param    $value (mixed) the value found in the database
+		 * @param    $post_id (mixed) the $post_id from which the value was loaded
+		 * @param    $field (array) the field array holding all the field options
+		 *
+		 * @return   $value
+		 */
+		function update_value( $value, $post_id, $field ) {
+			if ( ! empty( $field['multiple'] ) ) {
+				$value = array_map( function ( $single_value ) use ( $field ) {
+					return acf_textref_field::update_single_value( trim( $single_value ), $field );
+				}, explode( $field['separator'], $value ) );
+			} else {
+				$value = acf_textref_field::update_single_value( $value, $field );
+			}
+
+			return $value;
 		}
 
 		/**
@@ -62,10 +153,10 @@ if ( ! class_exists( 'acf_textref_field' ) ) {
 		 * @return $value (mixed) the formatted value
 		 */
 		function format_value( $value, $post_id, $field ) {
-			if ( ! empty( $post = get_page_by_title( $value, OBJECT, $field['post_type'] ) ) && $post->post_title === $value ) {
-				return sprintf( '<a href="%1$s">%2$s</a>', get_the_permalink( $post->ID ), $value );
-			} else {
-				return $value;
+			switch ( $field['return_format'] ) {
+				case 'array':
+				default:
+					return $value;
 			}
 		}
 
