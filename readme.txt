@@ -11,6 +11,9 @@ Text reference field for Advanced Custom Field v5.
 
 == Changelog ==
 
+= 1.1.1 =
+* Add composer.json
+
 = 1.1.0 =
 * Add multiple / separator / return_format settings
 * Represent value as array( "text" => '...', "post_id" => null ) in database
