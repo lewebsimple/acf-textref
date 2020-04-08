@@ -19,6 +19,7 @@ if ( ! class_exists( 'acf_textref_field' ) ) {
 				'multiple'      => 0,
 				'separator'     => ';',
 				'return_format' => 'array',
+				'link_class'    => '',
 			);
 			$this->settings = $settings;
 			parent::__construct();
@@ -67,7 +68,33 @@ if ( ! class_exists( 'acf_textref_field' ) ) {
 				'type'         => 'select',
 				'name'         => 'return_format',
 				'choices'      => array(
-					'array' => __( "Values (array)", 'acf-textref' ),
+					'array'  => __( "Values (array)", 'acf-textref' ),
+					'string' => __( "String", 'acf-textref' ),
+					'list'   => __( "List", 'acf-textref' ),
+					'inline' => __( "Inline", 'acf-textref' ),
+				),
+			) );
+			// Link Class
+			acf_render_field_setting( $field, array(
+				'label'             => __( "Link class", 'acf-textref' ),
+				'instructions'      => __( "Specify the class used for the link.", 'acf-textref' ),
+				'type'              => 'text',
+				'name'              => 'link_class',
+				'conditional_logic' => array(
+					array(
+						array(
+							'field'    => 'return_format',
+							'operator' => '==',
+							'value'    => 'list',
+						),
+					),
+					array(
+						array(
+							'field'    => 'return_format',
+							'operator' => '==',
+							'value'    => 'inline',
+						),
+					),
 				),
 			) );
 		}
@@ -78,90 +105,17 @@ if ( ! class_exists( 'acf_textref_field' ) ) {
 		 * @param $field (array) the $field being rendered
 		 */
 		function render_field( $field ) {
-			$name = $field['name'];
-
-			// Format value as string for text input
-			if ( ! empty( $field['value'] ) && is_array( $field['value'] ) ) {
-				if ( $field['multiple'] ) {
-					$field['value'] = implode( $field['separator'], array_map( function ( $single_value ) use ( $field ) {
-						return acf_textref_field::load_single_value( $single_value, $field );
-					}, $field['value'] ) );
-				} else {
-					$field['value'] = acf_textref_field::load_single_value( $field['value'], $field );
-				}
-			}
+			$name  = $field['name'];
+			$value = acf_textref_plugin::format_value( $field['value'], wp_parse_args( array( 'return_format' => 'string' ), $field ) );
 			?>
             <div class="acf-input-wrap acf-textref">
-                <input type="text" name="<?= $name ?>" value="<?= $field['value'] ?>"/>
+                <input type="text" name="<?= $name ?>" value="<?= $value ?>"/>
             </div>
 			<?php
 		}
 
-		// Helper: Convert single value from array => text
-		static function load_single_value( $value, $field ) {
-			if ( empty( $value ) || ! is_array( $value ) ) {
-				return $value;
-			}
-			if ( ! empty( $post_id = $value['post_id'] ) ) {
-				return get_the_title( $post_id ) . " [$post_id]";
-			} elseif ( isset( $value['text'] ) ) {
-				return $value['text'];
-			}
-
-			return $value;
-		}
-
-		// Helper: Convert single value from text => array
-		static function update_single_value( $value, $field ) {
-			if ( empty( $value ) || is_array( $value ) ) {
-				return $value;
-			}
-
-			$post_id = null;
-			if ( preg_match( '/(.*) \[(\d+)\]$/', $value, $matches ) ) {
-				if ( get_post_type( $matches[2] ) === $field['post_type'] ) {
-					$post_id = (int) end( $matches );
-					$value   = get_the_title( $post_id );
-				} else {
-					$value = $matches[1];
-				}
-			} elseif ( ! empty( $post = get_page_by_title( $value, OBJECT, $field['post_type'] ) ) && $post->post_title === $value ) {
-				$post_id = $post->ID;
-			}
-
-			return array(
-				'text'    => $value,
-				'post_id' => $post_id,
-			);
-		}
-
 		/**
-		 *  Load textref value
-		 *
-		 * @param    $value (mixed) the value found in the database
-		 * @param    $post_id (mixed) the $post_id from which the value was loaded
-		 * @param    $field (array) the field array holding all the field options
-		 *
-		 * @return    $value
-		 */
-		function load_value( $value, $post_id, $field ) {
-			if ( empty( $value ) || is_array( $value ) ) {
-				return $value;
-			}
-
-			if ( $field['multiple'] ) {
-				$value = array_map( function ( $single_value ) use ( $field ) {
-					return acf_textref_field::update_single_value( trim( $single_value ), $field );
-				}, explode( $field['separator'], $value ) );
-			} else {
-				$value = acf_textref_field::update_single_value( trim( $value ), $field );
-			}
-
-			return $value;
-		}
-
-		/**
-		 *  update_value()
+		 * Update value in array format
 		 *
 		 * @param    $value (mixed) the value found in the database
 		 * @param    $post_id (mixed) the $post_id from which the value was loaded
@@ -170,19 +124,7 @@ if ( ! class_exists( 'acf_textref_field' ) ) {
 		 * @return   $value
 		 */
 		function update_value( $value, $post_id, $field ) {
-			if ( empty( $value ) || is_array( $value ) ) {
-				return $value;
-			}
-
-			if ( $field['multiple'] ) {
-				$value = array_map( function ( $single_value ) use ( $field ) {
-					return acf_textref_field::update_single_value( trim( $single_value ), $field );
-				}, explode( $field['separator'], $value ) );
-			} else {
-				$value = acf_textref_field::update_single_value( trim( $value ), $field );
-			}
-
-			return $value;
+			return acf_textref_plugin::parse_value( $value, $field );
 		}
 
 		/**
@@ -195,11 +137,7 @@ if ( ! class_exists( 'acf_textref_field' ) ) {
 		 * @return $value (mixed) the formatted value
 		 */
 		function format_value( $value, $post_id, $field ) {
-			switch ( $field['return_format'] ) {
-				case 'array':
-				default:
-					return $value;
-			}
+			return acf_textref_plugin::format_value( $value, $field );
 		}
 
 	}
