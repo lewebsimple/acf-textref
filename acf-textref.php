@@ -9,7 +9,7 @@
  * License URI:     http://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:     acf-textref
  * Domain Path:     /languages
- * Version:         1.2.0
+ * Version:         1.2.1
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -24,7 +24,7 @@ if ( ! class_exists( 'acf_textref_plugin' ) ) {
 
 		function __construct() {
 			$this->settings = array(
-				'version' => '1.2.0',
+				'version' => '1.2.1',
 				'url'     => plugin_dir_url( __FILE__ ),
 				'path'    => plugin_dir_path( __FILE__ )
 			);
@@ -120,8 +120,9 @@ if ( ! class_exists( 'acf_textref_plugin' ) ) {
 
 			// Parse the values and convert each one to array('text' => '...', 'post_id' => '...')
 			$value = array_map( function ( $single_value ) use ( $field ) {
-				$text    = $single_value;
-				$post_id = null;
+				$single_value = trim( $single_value );
+				$text         = $single_value;
+				$post_id      = null;
 
 				if ( preg_match( '/(.*) \[(\d+)\]$/', $single_value, $matches ) ) {
 					if ( get_post_type( $matches[2] ) === $field['post_type'] ) {
