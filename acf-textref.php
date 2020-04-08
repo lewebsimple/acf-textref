@@ -9,7 +9,7 @@
  * License URI:     http://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:     acf-textref
  * Domain Path:     /languages
- * Version:         1.2.1
+ * Version:         1.2.2
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -24,7 +24,7 @@ if ( ! class_exists( 'acf_textref_plugin' ) ) {
 
 		function __construct() {
 			$this->settings = array(
-				'version' => '1.2.1',
+				'version' => '1.2.2',
 				'url'     => plugin_dir_url( __FILE__ ),
 				'path'    => plugin_dir_path( __FILE__ )
 			);
@@ -51,6 +51,7 @@ if ( ! class_exists( 'acf_textref_plugin' ) ) {
 			if ( ! is_array( $value ) ) {
 				return '';
 			}
+			$value = array_filter( $value );
 
 			$field = wp_parse_args( array(
 				'return_format' => 'string',
@@ -63,7 +64,7 @@ if ( ! class_exists( 'acf_textref_plugin' ) ) {
 				case 'string':
 					return implode( $field['separator'], array_map( function ( $textref ) {
 						if ( empty( $textref['post_id'] ) ) {
-							return $textref['text'];
+							return isset( $textref['text'] ) ? $textref['text'] : '';
 						} else {
 							return sprintf( '%s [%d]', $textref['text'], $textref['post_id'] );
 						}
@@ -72,7 +73,7 @@ if ( ! class_exists( 'acf_textref_plugin' ) ) {
 				case 'list':
 					return '<ul><li>' . implode( '</li><li>', array_map( function ( $textref ) use ( $field ) {
 							if ( empty( $textref['post_id'] ) ) {
-								return $textref['text'];
+								return isset( $textref['text'] ) ? $textref['text'] : '';
 							} else {
 								return sprintf( '<a href="%s" class="%s">%s</a>', get_the_permalink( $textref['post_id'] ), $field['link_class'], $textref['text'] );
 							}
@@ -143,7 +144,6 @@ if ( ! class_exists( 'acf_textref_plugin' ) ) {
 
 			return $value;
 		}
-
 
 	}
 
