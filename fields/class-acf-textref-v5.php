@@ -78,18 +78,28 @@ if ( ! class_exists( 'acf_textref_field' ) ) {
 		 * @param $field (array) the $field being rendered
 		 */
 		function render_field( $field ) {
-			$name  = $field['name'];
-			$value = $field['value'];
+			$name = $field['name'];
+
+			// Format value as string for text input
+			if ( ! empty( $field['value'] ) && is_array( $field['value'] ) ) {
+				if ( $field['multiple'] ) {
+					$field['value'] = implode( $field['separator'], array_map( function ( $single_value ) use ( $field ) {
+						return acf_textref_field::load_single_value( $single_value, $field );
+					}, $field['value'] ) );
+				} else {
+					$field['value'] = acf_textref_field::load_single_value( $field['value'], $field );
+				}
+			}
 			?>
-			<div class="acf-input-wrap acf-textref">
-				<input type="text" name="<?= $name ?>" value="<?= $value ?>"/>
-			</div>
+            <div class="acf-input-wrap acf-textref">
+                <input type="text" name="<?= $name ?>" value="<?= $field['value'] ?>"/>
+            </div>
 			<?php
 		}
 
 		// Helper: Convert single value from array => text
 		static function load_single_value( $value, $field ) {
-			if ( empty( $value ) ) {
+			if ( empty( $value ) || ! is_array( $value ) ) {
 				return $value;
 			}
 			if ( ! empty( $post_id = $value['post_id'] ) ) {
@@ -103,7 +113,7 @@ if ( ! class_exists( 'acf_textref_field' ) ) {
 
 		// Helper: Convert single value from text => array
 		static function update_single_value( $value, $field ) {
-			if ( empty( $value ) ) {
+			if ( empty( $value ) || is_array( $value ) ) {
 				return $value;
 			}
 
@@ -135,16 +145,19 @@ if ( ! class_exists( 'acf_textref_field' ) ) {
 		 * @return    $value
 		 */
 		function load_value( $value, $post_id, $field ) {
-			if ( ! is_array( $value ) ) {
+			if ( empty( $value ) || is_array( $value ) ) {
 				return $value;
 			}
-			if ( ! empty( $field['multiple'] ) ) {
-				return implode( $field['separator'], array_map( function ( $single_value ) use ( $field ) {
-					return acf_textref_field::load_single_value( $single_value, $field );
-				}, $value ) );
+
+			if ( $field['multiple'] ) {
+				$value = array_map( function ( $single_value ) use ( $field ) {
+					return acf_textref_field::update_single_value( trim( $single_value ), $field );
+				}, explode( $field['separator'], $value ) );
 			} else {
-				return acf_textref_field::load_single_value( $value, $field );
+				$value = acf_textref_field::update_single_value( trim( $value ), $field );
 			}
+
+			return $value;
 		}
 
 		/**
@@ -157,12 +170,16 @@ if ( ! class_exists( 'acf_textref_field' ) ) {
 		 * @return   $value
 		 */
 		function update_value( $value, $post_id, $field ) {
-			if ( ! empty( $field['multiple'] ) ) {
+			if ( empty( $value ) || is_array( $value ) ) {
+				return $value;
+			}
+
+			if ( $field['multiple'] ) {
 				$value = array_map( function ( $single_value ) use ( $field ) {
 					return acf_textref_field::update_single_value( trim( $single_value ), $field );
 				}, explode( $field['separator'], $value ) );
 			} else {
-				$value = acf_textref_field::update_single_value( $value, $field );
+				$value = acf_textref_field::update_single_value( trim( $value ), $field );
 			}
 
 			return $value;
