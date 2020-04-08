@@ -124,7 +124,7 @@ if ( ! class_exists( 'acf_textref_field' ) ) {
 		 * @return   $value
 		 */
 		function update_value( $value, $post_id, $field ) {
-			return acf_textref_plugin::parse_value( $value, $field );
+			return acf_textref_plugin::parse_value( $value, wp_parse_args( array( 'return_format' => 'array' ), $field ) );
 		}
 
 		/**
