@@ -45,20 +45,17 @@ if ( ! class_exists( 'acf_textref_plugin' ) ) {
 		 * @return string|array
 		 */
 		static function format_value( $value, $field = array() ) {
-			if ( empty( $value ) ) {
-				return $value;
-			}
-			if ( ! is_array( $value ) ) {
-				return '';
-			}
-			$value = array_filter( $value );
-
 			$field = wp_parse_args( array(
 				'return_format' => 'string',
 				'multiple'      => true,
 				'separator'     => ';',
 				'link_class'    => '',
 			) );
+
+			// Force array value
+			if ( ! is_array( $value ) ) {
+				$value = array();
+			}
 
 			switch ( $field['return_format'] ) {
 				case 'string':
