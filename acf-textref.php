@@ -45,7 +45,7 @@ if ( ! class_exists( 'acf_textref_plugin' ) ) {
 		 * @return string|array
 		 */
 		static function format_value( $value, $field = array() ) {
-			$field = wp_parse_args( array(
+			$field = wp_parse_args( $field, array(
 				'return_format' => 'string',
 				'multiple'      => true,
 				'separator'     => ';',
