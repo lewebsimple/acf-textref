@@ -9,7 +9,7 @@
  * License URI:     http://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:     acf-textref
  * Domain Path:     /languages
- * Version:         1.2.5
+ * Version:         1.2.6
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -24,7 +24,7 @@ if ( ! class_exists( 'acf_textref_plugin' ) ) {
 
 		function __construct() {
 			$this->settings = array(
-				'version' => '1.2.5',
+				'version' => '1.2.6',
 				'url'     => plugin_dir_url( __FILE__ ),
 				'path'    => plugin_dir_path( __FILE__ )
 			);
@@ -68,7 +68,7 @@ if ( ! class_exists( 'acf_textref_plugin' ) ) {
 					}, $value ) );
 
 				case 'list':
-					return '<ul><li>' . implode( '</li><li>', array_map( function ( $textref ) use ( $field ) {
+					return empty( $value ) ? '' : '<ul><li>' . implode( '</li><li>', array_map( function ( $textref ) use ( $field ) {
 							if ( empty( $textref['post_id'] ) ) {
 								return isset( $textref['text'] ) ? $textref['text'] : '';
 							} else {
