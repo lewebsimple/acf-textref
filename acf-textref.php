@@ -77,7 +77,7 @@ if ( ! class_exists( 'acf_textref_plugin' ) ) {
 						}, $value ) ) . '</li></ul>';
 
 				case 'inline':
-					return implode( $field['separator'], array_map( function ( $textref ) use ( $field ) {
+					return implode( $field['separator'] . ' ', array_map( function ( $textref ) use ( $field ) {
 						if ( empty( $textref['post_id'] ) ) {
 							return $textref['text'];
 						} else {
